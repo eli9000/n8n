@@ -77,11 +77,6 @@ services:
     hostname: n8n-import
     container_name: n8n-import
     entrypoint: /bin/sh
-    command:
-      - "-c"
-      - "n8n import:credentials --separate --input=/demo-data/credentials && n8n import:workflow --separate --input=/demo-data/workflows"
-    volumes:
-      - ./n8n/demo-data:/demo-data
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,7 +93,6 @@ services:
       - "--tunnel"
     volumes:
       - n8n_storage:/home/node/.n8n
-      - ./n8n/demo-data:/demo-data
       - ./shared:/data/shared
     depends_on:
       postgres:
@@ -130,45 +124,3 @@ services:
     volumes:
       - ./shared:/data/shared
     restart: unless-stopped
-
-  ollama-cpu:
-    profiles: ["cpu"]
-    <<: *service-ollama
-
-  ollama-gpu:
-    profiles: ["gpu-nvidia"]
-    <<: *service-ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-  ollama-gpu-amd:
-    profiles: ["gpu-amd"]
-    <<: *service-ollama
-    image: ollama/ollama:rocm
-    devices:
-      - "/dev/kfd"
-      - "/dev/dri"
-
-  ollama-pull-llama-cpu:
-    profiles: ["cpu"]
-    <<: *init-ollama
-    depends_on:
-      - ollama-cpu
-
-  ollama-pull-llama-gpu:
-    profiles: ["gpu-nvidia"]
-    <<: *init-ollama
-    depends_on:
-      - ollama-gpu
-
-  ollama-pull-llama-gpu-amd:
-    profiles: ["gpu-amd"]
-    <<: *init-ollama
-    image: ollama/ollama:rocm
-    depends_on:
-      - ollama-gpu-amd
