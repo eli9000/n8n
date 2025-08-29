@@ -23,19 +23,23 @@ app.get("/scrape", async (req, res) => {
 
     // Set a longer timeout (e.g., 60 seconds)
     await page
-      .goto(url, { waitUntil: "domcontentloaded", timeout: 90000 })
+      .goto(url, { waitUntil: "networkidle2", timeout: 60000 })
       .catch(async (err) => {
         console.error("Navigation failed:", err.message);
         // Take a screenshot on timeout
         const screenshotPath = path.join(
-          "/data/shared",
+          "/data/shared/screenshots",
           `screenshot-${Date.now()}.png`
         );
+        const pdfPath = path.join("/data/shared/pdfs", `hn-${Date.now()}.pdf`);
         await page.screenshot({ path: screenshotPath, fullPage: true });
+        await page.pdf({ path: pdfPath });
         await browser.close();
-        return res
-          .status(500)
-          .json({ error: "Navigation timed out", screenshot: screenshotPath });
+        return res.status(500).json({
+          error: "Navigation timed out",
+          screenshot: screenshotPath,
+          pdf: pdfPath,
+        });
       });
 
     // Try to extract text
@@ -55,13 +59,16 @@ app.get("/scrape", async (req, res) => {
 
     // Take a screenshot as a fallback
     const screenshotPath = path.join(
-      "/data/shared",
+      "/data/shared/screenshots",
       `screenshot-${Date.now()}.png`
     );
+    const pdfPath = path.join("/data/shared/pdfs", `hn-${Date.now()}.pdf`);
+
     await page.screenshot({ path: screenshotPath, fullPage: true });
+    await page.pdf({ path: pdfPath });
 
     await browser.close();
-    res.json({ jobText, screenshot: screenshotPath });
+    res.json({ jobText, screenshot: screenshotPath, pdf: pdfPath });
   } catch (error) {
     res.status(500).json({ error: error.message, screenshot: null });
   }
